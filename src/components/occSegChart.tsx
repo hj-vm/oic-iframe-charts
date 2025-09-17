@@ -90,6 +90,9 @@ export function OccupationalSegregationChart() {
     }, {} as Record<keyof typeof services, { female: number; male: number; count: number }>)
   }, [])
 
+  const femaleColor = services[activeService].color
+  const maleColor = `color-mix(in oklab, ${services[activeService].color} 60%, white)`
+
   return (
     <div className="w-full h-full bg-background m-0 p-0">
       <Card className="w-full h-full border-none shadow-none bg-transparent m-0 p-0">
@@ -100,20 +103,36 @@ export function OccupationalSegregationChart() {
               Percentage breakdown of female and male employees by grade across services
             </CardDescription>
           </div>
-          <div className="flex flex-wrap">
+          <div className="grid grid-cols-2 gap-0 sm:flex sm:flex-wrap">
             {Object.entries(services).map(([key, service]) => {
               const serviceKey = key as keyof typeof services
+              const hoverColor = `color-mix(in oklab, ${service.color} 60%, white)`
               return (
                 <button
                   key={serviceKey}
                   data-active={activeService === serviceKey}
-                  className="data-[active=true]:bg-muted/50 relative z-30 flex flex-1 flex-col justify-center gap-1 border-t px-4 py-3 text-left even:border-l sm:border-t-0 sm:border-l sm:px-6 sm:py-4 min-w-[100px]"
+                  className="data-[active=true]:bg-muted/50 relative z-30 flex flex-1 flex-col justify-center gap-1 border-t border-r even:border-r-0 last:border-r-0 px-3 py-2 text-left sm:border-t-0 sm:border-l sm:border-r-0 sm:even:border-l sm:px-4 sm:py-3 lg:px-6 lg:py-4 min-w-0 sm:min-w-[100px] transition-all duration-200 hover:bg-muted/30"
+                  style={{
+                    borderLeft: activeService === serviceKey 
+                      ? `2px solid ${service.color}` 
+                      : '2px solid transparent',
+                  }}
+                  onMouseEnter={(e) => {
+                    if (activeService !== serviceKey) {
+                      e.currentTarget.style.borderLeft = `2px solid ${hoverColor}`
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (activeService !== serviceKey) {
+                      e.currentTarget.style.borderLeft = '2px solid transparent'
+                    }
+                  }}
                   onClick={() => setActiveService(serviceKey)}
                 >
                   <span className="text-muted-foreground text-xs">
                     {service.label}
                   </span>
-                  <div className="flex gap-2 text-sm">
+                  <div className="flex flex-col gap-0 text-xs sm:flex-row sm:gap-2 sm:text-sm">
                     <span className="font-medium">
                       F: {totalCounts[serviceKey].female}%
                     </span>
@@ -126,59 +145,95 @@ export function OccupationalSegregationChart() {
             })}
           </div>
         </CardHeader>
-        <CardContent className="flex-1 !p-0 !m-0">
-          <ChartContainer
-            config={chartConfig}
-            className="w-full h-[calc(100vh-140px)] min-h-[400px]"
-          >
-            <BarChart
-              accessibilityLayer
-              data={filteredData}
-              margin={{
-                left: 12,
-                right: 12,
-              }}
+        <CardContent className="flex-1 !p-0 !m-0 flex flex-col">
+          <div className="flex-1">
+            <ChartContainer
+              config={chartConfig}
+              className="w-full h-[calc(100vh-180px)] min-h-[400px]"
             >
-              <CartesianGrid vertical={false} />
-              <XAxis
-                dataKey="grade"
-                tickLine={false}
-                axisLine={false}
-                tickMargin={8}
-                angle={-45}
-                textAnchor="end"
-                height={80}
+              <BarChart
+                accessibilityLayer
+                data={filteredData}
+                margin={{
+                  left: 12,
+                  right: 12,
+                }}
+              >
+                <CartesianGrid vertical={false} />
+                <XAxis
+                  dataKey="grade"
+                  tickLine={false}
+                  axisLine={false}
+                  tickMargin={8}
+                  angle={-45}
+                  textAnchor="end"
+                  height={80}
+                />
+                <YAxis
+                  tickLine={false}
+                  axisLine={false}
+                  tickMargin={8}
+                  label={{ value: 'Percentage (%)', angle: -90, position: 'insideLeft' }}
+                />
+                <ChartTooltip
+                  content={
+                    <ChartTooltipContent
+                      className="w-[180px]"
+                      labelFormatter={(value) => `Grade: ${value}`}
+                      formatter={(value, name) => {
+                        const currentFemaleColor = services[activeService].color
+                        const currentMaleColor = `color-mix(in oklab, ${services[activeService].color} 60%, white)`
+                        
+                        // Debug: Let's see what name values we're getting
+                        console.log('Tooltip name:', name)
+                        
+                        const isFemaleName = name === 'female' || name === 'Female'
+                        
+                        return [
+                          <div key={name} className="flex items-center gap-2">
+                            <div 
+                              className="w-3 h-3 rounded-sm" 
+                              style={{ 
+                                backgroundColor: isFemaleName ? currentFemaleColor : currentMaleColor 
+                              }}
+                            />
+                            <span>{value}%</span>
+                          </div>,
+                          isFemaleName ? 'Female' : 'Male'
+                        ]
+                      }}
+                    />
+                  }
+                />
+                <Bar 
+                  dataKey="female" 
+                  fill={femaleColor} 
+                  name="Female"
+                />
+                <Bar 
+                  dataKey="male" 
+                  fill={maleColor} 
+                  name="Male" 
+                />
+              </BarChart>
+            </ChartContainer>
+          </div>
+          <div className="flex justify-center gap-4 px-6 py-3 border-t bg-background">
+            <div className="flex items-center gap-2">
+              <div 
+                className="w-4 h-4 rounded-sm border border-muted"
+                style={{ backgroundColor: femaleColor }}
               />
-              <YAxis
-                tickLine={false}
-                axisLine={false}
-                tickMargin={8}
-                label={{ value: 'Percentage (%)', angle: -90, position: 'insideLeft' }}
+              <span className="text-sm font-medium">Female</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div 
+                className="w-4 h-4 rounded-sm border border-muted"
+                style={{ backgroundColor: maleColor }}
               />
-              <ChartTooltip
-                content={
-                  <ChartTooltipContent
-                    className="w-[180px]"
-                    labelFormatter={(value) => `Grade: ${value}`}
-                    formatter={(value, name) => [
-                      `${value}%`,
-                      name === 'female' ? 'Female' : name === 'male' ? 'Male' : name
-                    ]}
-                  />
-                }
-              />
-              <Bar 
-                dataKey="female" 
-                fill={services[activeService].color} 
-                name="Female"
-              />
-              <Bar 
-                dataKey="male" 
-                fill={`color-mix(in oklab, ${services[activeService].color} 60%, white)`} 
-                name="Male" 
-              />
-            </BarChart>
-          </ChartContainer>
+              <span className="text-sm font-medium">Male</span>
+            </div>
+          </div>
         </CardContent>
       </Card>
     </div>
