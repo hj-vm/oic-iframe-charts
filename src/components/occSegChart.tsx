@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts"
+import { Bar, BarChart, XAxis, YAxis } from "recharts"
 
 import {
   Card,
@@ -106,33 +106,46 @@ export function OccupationalSegregationChart() {
           <div className="grid grid-cols-2 gap-0 sm:flex sm:flex-wrap">
             {Object.entries(services).map(([key, service]) => {
               const serviceKey = key as keyof typeof services
-              const hoverColor = `color-mix(in oklab, ${service.color} 60%, white)`
+              const mutedColor = `color-mix(in oklab, ${service.color} 60%, white)`
+              const [isHovered, setIsHovered] = React.useState(false)
+              
               return (
                 <button
                   key={serviceKey}
                   data-active={activeService === serviceKey}
-                  className="data-[active=true]:bg-muted/50 relative z-30 flex flex-1 flex-col justify-center gap-1 border-t border-r even:border-r-0 last:border-r-0 px-3 py-2 text-left sm:border-t-0 sm:border-l sm:border-r-0 sm:even:border-l sm:px-4 sm:py-3 lg:px-6 lg:py-4 min-w-0 sm:min-w-[100px] transition-all duration-200 hover:bg-muted/30"
+                  className="data-[active=true]:bg-muted/50 relative z-30 flex flex-1 flex-col justify-center gap-1 border-t border-r even:border-r-0 last:border-r-0 px-3 py-2 text-left sm:border-t-0 sm:border-l sm:border-r-0 sm:even:border-l sm:px-4 sm:py-3 lg:px-6 lg:py-4 min-w-0 sm:min-w-[120px] transition-all duration-200 hover:bg-muted/30 cursor-pointer hover:shadow-sm"
                   style={{
                     borderLeft: activeService === serviceKey 
-                      ? `2px solid ${service.color}` 
-                      : '2px solid transparent',
+                      ? `3px solid ${service.color}` 
+                      : `3px solid ${mutedColor}`,
                   }}
                   onMouseEnter={(e) => {
+                    setIsHovered(true)
                     if (activeService !== serviceKey) {
-                      e.currentTarget.style.borderLeft = `2px solid ${hoverColor}`
+                      e.currentTarget.style.borderLeft = `3px solid ${service.color}`
                     }
                   }}
                   onMouseLeave={(e) => {
+                    setIsHovered(false)
                     if (activeService !== serviceKey) {
-                      e.currentTarget.style.borderLeft = '2px solid transparent'
+                      e.currentTarget.style.borderLeft = `3px solid ${mutedColor}`
                     }
                   }}
                   onClick={() => setActiveService(serviceKey)}
                 >
-                  <span className="text-muted-foreground text-xs">
+                  <span className="text-muted-foreground text-xs flex items-center gap-2 whitespace-nowrap">
+                    <span 
+                      className="w-2 h-2 rounded-full transition-all duration-200 flex-shrink-0" 
+                      style={{ 
+                        backgroundColor: activeService === serviceKey || (isHovered && activeService !== serviceKey) 
+                          ? service.color 
+                          : 'transparent',
+                        border: `2px solid ${service.color}`
+                      }}
+                    />
                     {service.label}
                   </span>
-                  <div className="flex flex-col gap-0 text-xs sm:flex-row sm:gap-2 sm:text-sm">
+                  <div className="flex flex-row gap-2 text-xs whitespace-nowrap">
                     <span className="font-medium">
                       F: {totalCounts[serviceKey].female}%
                     </span>
@@ -159,21 +172,20 @@ export function OccupationalSegregationChart() {
                   right: 12,
                 }}
               >
-                <CartesianGrid vertical={false} />
                 <XAxis
                   dataKey="grade"
                   tickLine={false}
                   axisLine={false}
                   tickMargin={8}
-                  angle={-45}
-                  textAnchor="end"
-                  height={80}
+                  angle={0}
+                  textAnchor="middle"
+                  height={60}
                 />
                 <YAxis
                   tickLine={false}
                   axisLine={false}
                   tickMargin={8}
-                  label={{ value: 'Percentage (%)', angle: -90, position: 'insideLeft' }}
+                  tick={false}
                 />
                 <ChartTooltip
                   content={
@@ -183,9 +195,6 @@ export function OccupationalSegregationChart() {
                       formatter={(value, name) => {
                         const currentFemaleColor = services[activeService].color
                         const currentMaleColor = `color-mix(in oklab, ${services[activeService].color} 60%, white)`
-                        
-                        // Debug: Let's see what name values we're getting
-                        console.log('Tooltip name:', name)
                         
                         const isFemaleName = name === 'female' || name === 'Female'
                         
